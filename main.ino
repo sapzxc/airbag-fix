@@ -18,10 +18,10 @@ char writeDump[] = ""
 "a5a5 a5a5 a5a5 a5a5 a5a5 a5a5 a5a5 5a5a"
 "";
 
-int eeprom_size = 1024; // 128x16bit => (2048)bit
+int eeprom_size = 2048; // 128x16bit => (2048)bit
 int eeprom_bank_size = 16; //bit -> 128x(16)bit = 2048bit = 256bytes
 
-int eeprom_address_width_bits = 6; // see datasheet, A0-A6 - mean 7 bit of data address
+int eeprom_address_width_bits = 8; // see datasheet, A0-A6 - mean 7 bit of data address
                                     // As sample S220 has 7 bit address
 
 /*
