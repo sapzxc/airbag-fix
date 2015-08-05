@@ -1,4 +1,6 @@
 // write yoour dump here 
+/*
+c56 - subaru wrx 2003-2007
 char writeDump[] = ""
 "0000 0000 0000 0000 0000 0000 0000 0000"
 "0000 0000 0000 0000 0000 0000 0000 0000"
@@ -17,12 +19,28 @@ char writeDump[] = ""
 "0000 ffff ffff ffff ffff ffff ffff ffff"
 "a5a5 a5a5 a5a5 a5a5 a5a5 a5a5 a5a5 5a5a"
 "";
+*/
 
-int eeprom_size = 2048; // 128x16bit => (2048)bit
-int eeprom_bank_size = 16; //bit -> 128x(16)bit = 2048bit = 256bytes
+// write yoour dump here 
+// c46 - subaru wrx 00-03
+char writeDump[] = ""
+"0000 0000 0000 0000 0000 0000 0000 0000"
+"0000 0000 0000 0000 0000 0000 0000 0000"
+"0000 0000 0000 0000 0000 0000 0000 0000"
+"0000 0000 0000 0000 0000 0000 0000 0000"
+"0000 0000 0000 0000 0000 0000 0000 0000"
+"0000 0000 0000 0000 0000 0000 0000 0000"
+"0000 0000 0000 0000 0000 0000 0000 0000"
+"0000 0000 0000 0000 5a5a 5a5a a5a5 a5a5"
+"";
 
-int eeprom_address_width_bits = 8; // see datasheet, A0-A6 - mean 7 bit of data address
+int eeprom_size = 1024; // 128x16bit => (2048)bit
+int eeprom_bank_size = 8; //bit -> 128x(16)bit = 2048bit = 256bytes
+
+int eeprom_address_width_bits = 7; // see datasheet, A0-A6 - mean 7 bit of data address
                                     // As sample S220 has 7 bit address
+int needDummyZero = 0; // need for c56, not need for c46
+int useWriteTail = 1; // need for c46. It write 8 bit data and 8 bit null information. Don't know why it need.
 
 /*
 MicroWire protocol integration.
@@ -152,11 +170,11 @@ void sendSer(int x, int length)
     }
     digitalWrite(CLOCK,HIGH); 
     digitalWrite(CLOCK,LOW); 
-    delay(1);
+//    delay(1);
   }
   
   //needs little delay to work
-//  delay(1);
+  delay(1);
 }
 
 /**
@@ -176,8 +194,11 @@ void readEeprom()
     sendSer(words, eeprom_address_width_bits); //sending Address 
   
     //dummy zero that is sent at start of read
-    digitalWrite(CLOCK,HIGH);
-    digitalWrite(CLOCK,LOW);
+    if(needDummyZero)
+    {
+      digitalWrite(CLOCK,HIGH);
+      digitalWrite(CLOCK,LOW);
+    }
 
     for(int i=0;i<eeprom_bank_size;i++)
     {
@@ -260,8 +281,16 @@ void writeEeprom()
   sendSer(0b100,3);
   sendSer(0b11000000,8); 
   digitalWrite(CHIP_SEL,LOW);
-  delay(1);
+  delay(5);
   
+  digitalWrite(CHIP_SEL, HIGH);
+  sendSer(0b100,3);
+  sendSer(0b10000000,8); 
+  digitalWrite(CHIP_SEL,LOW);
+  delay(5);
+  
+//  eeprom_bank_size = 16;
+
   int x=0;
   int xBit=0;
   int charsCount=0;
@@ -273,9 +302,14 @@ void writeEeprom()
     printf("%03d -> %s => ", words, wordStr.c_str());
     
     digitalWrite(CHIP_SEL, HIGH);
-    sendSer(0b101, 8); //sending WRITE instruction 
+    sendSer(0b101, 3); //sending WRITE instruction 
     sendSer(words, eeprom_address_width_bits); //sending Address 
     sendSer(writeWord, eeprom_bank_size);
+    if(useWriteTail)
+    {
+      sendSer(0, eeprom_bank_size);
+    }
+    delay(3);
     digitalWrite(CHIP_SEL, LOW);
     
     Serial.print("ok. \n");
@@ -284,7 +318,7 @@ void writeEeprom()
   // write down, disable writing (EWDS instruction )
   digitalWrite(CHIP_SEL, HIGH);
   sendSer(0b100,3);
-  sendSer(0b00000000,8);
+  sendSer(0b0000000,8);
   digitalWrite(CHIP_SEL,LOW);
   delay(1);
   
